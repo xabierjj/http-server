@@ -44,8 +44,7 @@ public class Main {
       OutputStream outputStream = s.getOutputStream();
 
       PrintWriter out = new PrintWriter(outputStream, true);
-      System.out.println(httpResponse.getResponse());
-      out.println(httpResponse.getResponse());
+      out.print(httpResponse.getResponse());
       out.flush();
 
       System.out.println("accepted new connection");
