@@ -72,7 +72,7 @@ class HttpResponse {
     sbd.append(this.statusCode.getCode());
     sbd.append(" ");
     sbd.append(this.statusCode.getMessage());
-    sbd.append("\\r\\n\\r\\n");
+    sbd.append("\r\n\r\n");
 
     return sbd.toString();
   }
