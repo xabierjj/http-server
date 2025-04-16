@@ -92,6 +92,7 @@ class HttpResponse {
     this.protocol = protocol;
     this.statusCode = statusCode;
     this.body = body;
+    this.headers = headers;
   }
   HttpResponse(String protocol, HttpStatusCode statusCode) {
     this.protocol = protocol;
@@ -111,13 +112,17 @@ class HttpResponse {
     // TODO add headers
     sbd.append("Content-Length: ");
     sbd.append(this.body != null ? this. body.getBytes(StandardCharsets.UTF_8).length : 0);
+    sbd.append("\r\n");
+
     
     for (HttpHeader header: this.headers) {
       sbd.append(header.getName());
+      sbd.append(":");
       sbd.append(" ");
       sbd.append(header.getValue());
+      sbd.append("\r\n");
+
     }
-    sbd.append("\r\n");
     sbd.append("\r\n");
 
     if (this.body != null) {
