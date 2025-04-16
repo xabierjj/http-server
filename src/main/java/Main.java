@@ -35,7 +35,6 @@ public class Main {
       System.out.println(params.get("str"));
       
       HttpResponse response = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK,params.get("str") );
-      response.setHeader("Content-Type", "text/plain");
       return response;
 
     });
@@ -99,6 +98,13 @@ class HttpResponse {
     this.protocol = protocol;
     this.statusCode = statusCode;
     this.body = body;
+
+    if (this.body != null) {
+      // TODO with this we are just allowing text content type
+      // we have to make this dynamic, and in case no content type is set and there is a body, set this as default 
+      this.headers.set("Content-Type", "text/plain");
+
+    }
   }
   HttpResponse(String protocol, HttpStatusCode statusCode) {
     this.protocol = protocol;
@@ -133,7 +139,6 @@ class HttpResponse {
 
     if (this.body != null) {
       sbd.append(this.body);
-
     }
 
     return sbd.toString();
