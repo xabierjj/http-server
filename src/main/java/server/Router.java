@@ -1,22 +1,15 @@
+package server;
 import java.util.HashMap;
 import java.util.Map;
 
 
-
-@FunctionalInterface
-interface RequestHandler {
-    HttpResponse handle(HttpRequest request, Map<String,String> params);
-}
-
-
-
-public class TrieRoute {
-    Map<String, TrieRoute> childrens = new HashMap<>();
+public class Router {
+    Map<String, Router> childrens = new HashMap<>();
     boolean isChild;
     RequestHandler handler; 
     String name;
 
-    TrieRoute(String name) {
+    public Router(String name) {
         this.name = name;
     }
     public void setIsChild(boolean isChild) {
@@ -33,7 +26,7 @@ public class TrieRoute {
 
         //  "user" "phone"
 
-        TrieRoute currElement = this;
+        Router currElement = this;
        
 
         int index = 0;
@@ -58,7 +51,7 @@ public class TrieRoute {
                 name = name.replace("{", "").replace("}", "");
                 element = ":param";
             }
-            TrieRoute trieRoute = new TrieRoute(name);
+            Router trieRoute = new Router(name);
             currElement.childrens.put(element, trieRoute);
             currElement = trieRoute;
         }
@@ -74,11 +67,11 @@ public class TrieRoute {
         return name.startsWith("{") && name.endsWith("}");
     }
 
-    public RequestHandlerResponse getHandler(String path) {
+    public RouteHandler getHandler(String path) {
         String[] elements = path.split("/");
         int index = 0;
         // iterate the array until we no longer find a child and add the missing elements
-        TrieRoute currElement = this;
+        Router currElement = this;
         Map<String,String> paramMap = new HashMap<>();
         while ( index < elements.length) {
             String element = elements[index];
@@ -98,7 +91,7 @@ public class TrieRoute {
 
         if (index == elements.length && currElement.isChild) {
             // We have found the handler
-            return new RequestHandlerResponse( currElement.handler,paramMap);
+            return new RouteHandler( currElement.handler,paramMap);
         } else {
             // TODO should I throw error here?
             return null;
@@ -117,11 +110,11 @@ public class TrieRoute {
     }
 
 
-    public Map<String,TrieRoute> getChildrens() {
+    public Map<String,Router> getChildrens() {
         return this.childrens;
     }
 
-    public void setChildrens(Map<String,TrieRoute> childrens) {
+    public void setChildrens(Map<String,Router> childrens) {
         this.childrens = childrens;
     }
 
