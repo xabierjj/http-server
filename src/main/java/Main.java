@@ -6,8 +6,10 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
   public static void main(String[] args) {
@@ -16,6 +18,20 @@ public class Main {
     System.out.println("Logs from your program will appear here!");
 
     // Uncomment this block to pass the first stage
+    TrieRoute routePaths = new TrieRoute("");
+
+    routePaths.addPath("/", (HttpRequest httpRequest,Map<String,String> params) -> {
+      System.out.println("Root path");
+      return new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK);
+    });
+    routePaths.addPath("/echo/{str}", (HttpRequest httpRequest,Map<String,String> params) -> {
+      System.out.println(params.get("str"));
+      
+      List<HttpHeader> headers = List.of(new HttpHeader("Content-Type", "text/plain") );
+
+      return new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK,params.get("str"),headers );
+
+    });
 
     try {
       ServerSocket serverSocket = new ServerSocket(4221);
@@ -24,30 +40,39 @@ public class Main {
       // ensures that we don't run into 'Address already in use' errors
       serverSocket.setReuseAddress(true);
 
-      Socket s = serverSocket.accept(); // Wait for connection from client.
-      InputStream in = s.getInputStream();
+      while (true) {
+        Socket s = serverSocket.accept(); // Wait for connection from client.
+        InputStream in = s.getInputStream();
 
-      BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
-      List<String> requestLines = new ArrayList<>();
-      String line;
-      while ((line = bufferedReader.readLine()) != null && !line.isEmpty() ) {
-        requestLines.add(line);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
+        List<String> requestLines = new ArrayList<>();
+        String line;
+        while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
+          requestLines.add(line);
+        }
+        HttpRequest httpRequest = new HttpRequest(requestLines);
+
+        RequestHandlerResponse requestHandler = routePaths.getHandler(httpRequest.getPath());
+        HttpResponse httpResponse;
+        if (requestHandler==null) {
+          httpResponse = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.NOT_FOUND);
+        } else {
+          Map<String,String> paramMap = requestHandler.params();
+          httpResponse = requestHandler.requestHandler().handle(httpRequest,paramMap);
+        }
+
+  
+       
+
+        OutputStream outputStream = s.getOutputStream();
+
+        PrintWriter out = new PrintWriter(outputStream, true);
+        out.print(httpResponse.getResponse());
+        out.flush();
+        s.close();
+        System.out.println("accepted new connection");
       }
-      HttpRequest httpRequest = new HttpRequest(requestLines);
 
-      HttpResponse httpResponse = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK);
-      if (!httpRequest.getPath().equals("/")) {
-        httpResponse = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.NOT_FOUND);
-      }
-
-
-      OutputStream outputStream = s.getOutputStream();
-
-      PrintWriter out = new PrintWriter(outputStream, true);
-      out.print(httpResponse.getResponse());
-      out.flush();
-
-      System.out.println("accepted new connection");
     } catch (IOException e) {
       System.out.println("IOException: " + e.getMessage());
     }
@@ -55,10 +80,19 @@ public class Main {
 
 }
 
+
+
 class HttpResponse {
   private String protocol;
   private HttpStatusCode statusCode;
+  private String body;
+  private List<HttpHeader> headers = new ArrayList<>();
 
+  HttpResponse(String protocol, HttpStatusCode statusCode, String body,List<HttpHeader> headers) {
+    this.protocol = protocol;
+    this.statusCode = statusCode;
+    this.body = body;
+  }
   HttpResponse(String protocol, HttpStatusCode statusCode) {
     this.protocol = protocol;
     this.statusCode = statusCode;
@@ -72,7 +106,24 @@ class HttpResponse {
     sbd.append(this.statusCode.getCode());
     sbd.append(" ");
     sbd.append(this.statusCode.getMessage());
-    sbd.append("\r\n\r\n");
+    sbd.append("\r\n");
+
+    // TODO add headers
+    sbd.append("Content-Length: ");
+    sbd.append(this.body != null ? this. body.getBytes(StandardCharsets.UTF_8).length : 0);
+    
+    for (HttpHeader header: this.headers) {
+      sbd.append(header.getName());
+      sbd.append(" ");
+      sbd.append(header.getValue());
+    }
+    sbd.append("\r\n");
+    sbd.append("\r\n");
+
+    if (this.body != null) {
+      sbd.append(this.body);
+
+    }
 
     return sbd.toString();
   }
@@ -85,17 +136,14 @@ class HttpResponse {
     return this.statusCode;
   }
 
-
   @Override
   public String toString() {
     return "{" +
-      " protocol='" + getProtocol() + "'" +
-      ", statusCode='" + getStatusCode() + "'" +
-      "}";
+        " protocol='" + getProtocol() + "'" +
+        ", statusCode='" + getStatusCode() + "'" +
+        "}";
   }
 
-
-  
 }
 
 class HttpRequest {
@@ -127,13 +175,12 @@ class HttpRequest {
   @Override
   public String toString() {
     return "{" +
-      " path='" + getPath() + "'" +
-      ", protocol='" + getProtocol() + "'" +
-      ", method='" + getMethod() + "'" +
-      "}";
+        " path='" + getPath() + "'" +
+        ", protocol='" + getProtocol() + "'" +
+        ", method='" + getMethod() + "'" +
+        "}";
   }
 
-  
 }
 
 enum HttpMethod {
@@ -146,7 +193,8 @@ enum HttpMethod {
 
 enum HttpStatusCode {
   OK(200, "OK"),
-  NOT_FOUND(404, "Not Found");
+  NOT_FOUND(404, "Not Found"),
+  FORBIDDEN(403, "Forbidden");
 
   private int code;
   private String message;
@@ -163,4 +211,31 @@ enum HttpStatusCode {
   public String getMessage() {
     return message;
   }
+}
+
+class HttpHeader {
+  String name;
+  String value;
+
+  public HttpHeader(String name, String value) {
+    this.name = name;
+    this.value = value;
+  }
+
+  public String getName() {
+    return this.name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getValue() {
+    return this.value;
+  }
+
+  public void setValue(String value) {
+    this.value = value;
+  }
+
 }
