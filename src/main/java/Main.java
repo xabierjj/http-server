@@ -8,8 +8,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Main {
   public static void main(String[] args) {
@@ -20,6 +22,11 @@ public class Main {
     // Uncomment this block to pass the first stage
     TrieRoute routePaths = new TrieRoute("");
 
+    routePaths.addPath("/user-agent", (HttpRequest httpRequest,Map<String,String> params) -> {
+      String userAgent = httpRequest.getHeaderValue("user-agent");
+      return new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK, userAgent);
+    });
+
     routePaths.addPath("/", (HttpRequest httpRequest,Map<String,String> params) -> {
       System.out.println("Root path");
       return new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK);
@@ -27,9 +34,9 @@ public class Main {
     routePaths.addPath("/echo/{str}", (HttpRequest httpRequest,Map<String,String> params) -> {
       System.out.println(params.get("str"));
       
-      List<HttpHeader> headers = List.of(new HttpHeader("Content-Type", "text/plain") );
-
-      return new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK,params.get("str"),headers );
+      HttpResponse response = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.OK,params.get("str") );
+      response.setHeader("Content-Type", "text/plain");
+      return response;
 
     });
 
@@ -86,13 +93,12 @@ class HttpResponse {
   private String protocol;
   private HttpStatusCode statusCode;
   private String body;
-  private List<HttpHeader> headers = new ArrayList<>();
+  private HttpHeaders headers = new HttpHeaders();
 
-  HttpResponse(String protocol, HttpStatusCode statusCode, String body,List<HttpHeader> headers) {
+  HttpResponse(String protocol, HttpStatusCode statusCode, String body) {
     this.protocol = protocol;
     this.statusCode = statusCode;
     this.body = body;
-    this.headers = headers;
   }
   HttpResponse(String protocol, HttpStatusCode statusCode) {
     this.protocol = protocol;
@@ -115,8 +121,8 @@ class HttpResponse {
     sbd.append("\r\n");
 
     
-    for (HttpHeader header: this.headers) {
-      sbd.append(header.getName());
+    for (Map.Entry<String,String> header: this.headers.entries()) {
+      sbd.append(header.getKey());
       sbd.append(":");
       sbd.append(" ");
       sbd.append(header.getValue());
@@ -141,6 +147,10 @@ class HttpResponse {
     return this.statusCode;
   }
 
+  public void setHeader(String name, String value) {
+    this.headers.set(name, value);
+  }
+
   @Override
   public String toString() {
     return "{" +
@@ -156,13 +166,29 @@ class HttpRequest {
   private String path;
   private String protocol;
   private HttpMethod method;
+  private HttpHeaders headers;
 
   HttpRequest(List<String> requestData) {
+    this.headers = new HttpHeaders();
+    System.out.println(requestData);
+    // First line contains requestLine. ex: GET /user-agent HTTP/1.1
     String requestLine = requestData.get(0);
     String[] parts = requestLine.split(" ");
     this.path = parts[1];
     this.method = HttpMethod.valueOf(parts[0]);
     this.protocol = parts[2];
+    // the next lines contain the headers (if there is no body)
+    for (int i = 1; i< requestData.size(); i++) {
+      String headerLine = requestData.get(i);
+      int colonIndex = headerLine.indexOf(":");
+      if (colonIndex != -1) {
+          String headerName = headerLine.substring(0, colonIndex).trim();
+          String headerValue = headerLine.substring(colonIndex + 1).trim();
+          this.headers.set(headerName, headerValue);
+      } else {
+        // TODO Do I have to throw an error ?
+      }
+    }
   }
 
   public String getPath() {
@@ -175,6 +201,9 @@ class HttpRequest {
 
   public HttpMethod getMethod() {
     return this.method;
+  }
+  public String getHeaderValue(String headerName) {
+    return this.headers.get(headerName.toLowerCase());
   }
 
   @Override
@@ -218,29 +247,43 @@ enum HttpStatusCode {
   }
 }
 
-class HttpHeader {
-  String name;
-  String value;
+ class HttpHeaders {
+  private final Map<String, String> headers;
 
-  public HttpHeader(String name, String value) {
-    this.name = name;
-    this.value = value;
+  public HttpHeaders() {
+      this.headers = new HashMap<>();
   }
 
-  public String getName() {
-    return this.name;
+  public void set(String name, String value) {
+      headers.put(name.toLowerCase(), value);
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public String get(String name) {
+      return headers.get(name.toLowerCase());
   }
 
-  public String getValue() {
-    return this.value;
+  public boolean contains(String name) {
+      return headers.containsKey(name.toLowerCase());
   }
 
-  public void setValue(String value) {
-    this.value = value;
+  public void remove(String name) {
+      headers.remove(name.toLowerCase());
   }
 
+  public Set<String> names() {
+      return headers.keySet();
+  }
+
+  public Set<Map.Entry<String, String>> entries() {
+      return headers.entrySet();
+  }
+
+  @Override
+  public String toString() {
+      StringBuilder sb = new StringBuilder();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+          sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+      }
+      return sb.toString();
+  }
 }
