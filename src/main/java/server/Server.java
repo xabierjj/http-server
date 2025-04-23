@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +59,32 @@ public class Server {
                 }
                 HttpRequest httpRequest = new HttpRequest(requestLines);
 
+                String contentLengthHeader = httpRequest.getHeaderValue("Content-Length");
+
+                if (contentLengthHeader!=null) {
+                    
+                    // Read content and add body to request
+                    int contentLength = Integer.parseInt(contentLengthHeader);
+                    System.out.println("contentLength" +contentLength);
+
+                    char[] bodyChars = new char[contentLength];
+                    int totalRead = 0;
+                    while (totalRead < contentLength) {
+                        System.out.println("totalReads" +totalRead);
+
+                        int read = bufferedReader.read(bodyChars, totalRead, contentLength - totalRead);
+                        System.out.println("Lineee" +read);
+
+                        if (read == -1) break; 
+                        totalRead += read;
+                    }
+
+
+                    String requestBody = new String(bodyChars, 0, totalRead);
+                    System.out.println(requestBody);
+
+
+                }
                 RouteHandler requestHandler = this.router.getHandler(httpRequest.getPath());
                 HttpResponse httpResponse;
                 if (requestHandler == null) {

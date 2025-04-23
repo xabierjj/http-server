@@ -8,6 +8,7 @@ public class HttpRequest {
     private String protocol;
     private HttpMethod method;
     private HttpHeaders headers;
+    private String body;
   
     public HttpRequest(List<String> requestData) {
       this.headers = new HttpHeaders();
@@ -43,6 +44,16 @@ public class HttpRequest {
     public HttpMethod getMethod() {
       return this.method;
     }
+
+    
+    public String getBody() {
+      return this.body;
+    }
+
+    public void setBody(String body) {
+      this.body = body;
+    }
+
     public String getHeaderValue(String headerName) {
       return this.headers.get(headerName.toLowerCase());
     }
