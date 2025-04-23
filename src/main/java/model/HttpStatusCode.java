@@ -3,7 +3,9 @@ package model;
 public enum HttpStatusCode {
     OK(200, "OK"),
     NOT_FOUND(404, "Not Found"),
-    FORBIDDEN(403, "Forbidden");
+    FORBIDDEN(403, "Forbidden"),
+    INTERNAL_SERVER_ERROR(500, "Internal server error"),
+    ;
   
     private int code;
     private String message;

@@ -67,7 +67,7 @@ public class HttpResponse {
       return this.statusCode;
     }
   
-    public void setHeader(String name, String value) {
+    public void addHeader(String name, String value) {
       this.headers.set(name, value);
     }
   
