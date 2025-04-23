@@ -69,13 +69,23 @@ public class Server {
                 }
 
                 OutputStream outputStream = s.getOutputStream();
-
-                PrintWriter out = new PrintWriter(outputStream, true);
-                out.print(httpResponse.getResponse());
-                out.flush();
-                s.close();
+                // Use OutputStream directly instead of PrintWriter to avoid corrupting binary
+                // data.
+                // PrintWriter is character-based and not suitable for binary responses like
+                // images or downloads.
+                // This ensures we correctly send both text and binary content (e.g.
+                // application/octet-stream).
+                outputStream.write(httpResponse.getResponseBytes());
+                outputStream.flush();
             } catch (IOException exception) {
                 System.out.println("IOException: " + exception.getMessage());
+
+            } finally {
+                try {
+                    s.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
             }
 
