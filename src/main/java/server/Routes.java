@@ -28,9 +28,8 @@ public class Routes {
             try {
                 byte[] fileBytes = fileService.readFile(filename);
                 HttpResponse response = new HttpResponse(request.getProtocol(), HttpStatusCode.OK,
-                        fileBytes.toString());
+                        fileBytes);
                 response.addHeader("Content-Type", "application/octet-stream");
-                response.addHeader("Content-Length", String.valueOf(fileBytes.length));
                 return response;
             } catch (NoSuchFileException e) {
                 return new HttpResponse(request.getProtocol(), HttpStatusCode.NOT_FOUND);
