@@ -9,21 +9,21 @@ import services.FileService;
 public class Routes {
     public static Router createRouter(String fileDirectory) {
         FileService fileService = new FileService(fileDirectory);
-        Router router = new Router("");
+        Router router = new Router();
 
-        router.addPath("/", (request, params) -> new HttpResponse(request.getProtocol(), HttpStatusCode.OK));
+        router.get("/", (request, params) -> new HttpResponse(request.getProtocol(), HttpStatusCode.OK));
 
-        router.addPath("/user-agent", (request, params) -> {
+        router.get("/user-agent", (request, params) -> {
             String userAgent = request.getHeaderValue("user-agent");
             return new HttpResponse(request.getProtocol(), HttpStatusCode.OK, userAgent);
         });
 
-        router.addPath("/echo/{str}", (request, params) -> {
+        router.get("/echo/{str}", (request, params) -> {
             String str = params.get("str");
             return new HttpResponse(request.getProtocol(), HttpStatusCode.OK, str);
         });
 
-        router.addPath("/files/{filename}", (request, params) -> {
+        router.get("/files/{filename}", (request, params) -> {
             String filename = params.get("filename");
             try {
                 byte[] fileBytes = fileService.readFile(filename);
@@ -38,6 +38,12 @@ public class Routes {
                 return new HttpResponse(request.getProtocol(), HttpStatusCode.INTERNAL_SERVER_ERROR);
 
             }
+        });
+
+        router.post("/files/{filename}", (request, params) -> {
+            String filename = params.get("filename");
+            return new HttpResponse(request.getProtocol(), HttpStatusCode.OK);
+       
         });
 
         return router;

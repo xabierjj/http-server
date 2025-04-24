@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +53,21 @@ public class Server {
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
                 List<String> requestLines = new ArrayList<>();
                 String line;
+                
+                /*
+                POST REQUEST EXAMPLE:
+                
+                POST /submit-form HTTP/1.1\r\n
+                Host: example.com\r\n
+                Content-Type: application/x-www-form-urlencoded\r\n
+                Content-Length: 27\r\n
+                \r\n
+                name=Xabier&age=30&lang=Java
+
+                We use readline until there is no more content or until we find an empty line. After the empty line the we process the body of the request
+                
+                */
+
                 while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
                     requestLines.add(line);
                 }
@@ -63,29 +77,28 @@ public class Server {
 
                 if (contentLengthHeader!=null) {
                     
-                    // Read content and add body to request
-                    int contentLength = Integer.parseInt(contentLengthHeader);
-                    System.out.println("contentLength" +contentLength);
 
+                    // TODO: This assumes the body contains only text and uses a character encoding
+                    // where 1 character = 1 byte (e.g., ASCII or ISO-8859-1). For encodings like UTF-8
+                    // or UTF-16, this can break if characters use multiple bytes, since Content-Length
+                    // is in bytes but we're reading characters. Use InputStream.read(byte[]) for binary or multibyte-safe reading.
+
+                    int contentLength = Integer.parseInt(contentLengthHeader);
                     char[] bodyChars = new char[contentLength];
                     int totalRead = 0;
                     while (totalRead < contentLength) {
-                        System.out.println("totalReads" +totalRead);
-
                         int read = bufferedReader.read(bodyChars, totalRead, contentLength - totalRead);
-                        System.out.println("Lineee" +read);
-
                         if (read == -1) break; 
                         totalRead += read;
                     }
 
 
                     String requestBody = new String(bodyChars, 0, totalRead);
-                    System.out.println(requestBody);
+                    httpRequest.setBody(requestBody);
 
 
                 }
-                RouteHandler requestHandler = this.router.getHandler(httpRequest.getPath());
+                RouteHandler requestHandler = this.router.getHandler(httpRequest);
                 HttpResponse httpResponse;
                 if (requestHandler == null) {
                     httpResponse = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.NOT_FOUND);

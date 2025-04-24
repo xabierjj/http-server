@@ -1,37 +1,66 @@
 package server;
+
 import java.util.HashMap;
 import java.util.Map;
 
+import model.HttpMethod;
+import model.HttpRequest;
 
 public class Router {
-    Map<String, Router> childrens = new HashMap<>();
+    private final Map<HttpMethod, RouteTrie> methodTries = new HashMap<>();
+
+    public Router() {
+        methodTries.put(HttpMethod.GET, new RouteTrie(""));
+        methodTries.put(HttpMethod.POST, new RouteTrie(""));
+    }
+
+    public void post(String path, RequestHandler handler) {
+        this.methodTries.get(HttpMethod.POST).addPath(path, handler);
+    }
+    public void get(String path, RequestHandler handler) {
+        this.methodTries.get(HttpMethod.GET).addPath(path, handler);
+    }
+    public RouteHandler getHandler(HttpRequest httpRequest) {
+        return this.methodTries.get(httpRequest.getMethod()).getHandler(httpRequest.getPath());
+    }
+
+    
+}
+
+class RouteTrie {
+    Map<String, RouteTrie> childrens = new HashMap<>();
     boolean isChild;
-    RequestHandler handler; 
+    RequestHandler handler;
     String name;
 
-    public Router(String name) {
+    public RouteTrie(String name) {
         this.name = name;
     }
+
     public void setIsChild(boolean isChild) {
         this.isChild = isChild;
     }
+
     public void setHandler(RequestHandler handler) {
         this.handler = handler;
     }
 
-    //TODO how do we map the handler
-    public void addPath(String path,RequestHandler handler) {
+    // post => same method as addPath but for POST requests
+    // get => same method as addPath but for GET requests
+
+    // TODO how do we map the handler
+    public void addPath(String path, RequestHandler handler) {
         // split "/"
         String[] elements = path.split("/");
 
-        //  "user" "phone"
+        // "user" "phone"
 
-        Router currElement = this;
-       
+        RouteTrie currElement = this;
 
         int index = 0;
-        // iterate the array until we no longer find a child and add the missing elements
-        while ( index < elements.length) {
+        // iterate the array until we no longer find a child and add the missing
+        // elements
+        while (index < elements.length) {
             String element = elements[index];
             if (this.isWildCard(element)) {
                 element = ":param";
@@ -44,14 +73,14 @@ public class Router {
         }
 
         // element at index is not in the treenode
-        for (int i = index; i < elements.length; i ++) {
+        for (int i = index; i < elements.length; i++) {
             String element = elements[i];
             String name = element;
             if (this.isWildCard(element)) {
                 name = name.replace("{", "").replace("}", "");
                 element = ":param";
             }
-            Router trieRoute = new Router(name);
+            RouteTrie trieRoute = new RouteTrie(name);
             currElement.childrens.put(element, trieRoute);
             currElement = trieRoute;
         }
@@ -59,8 +88,8 @@ public class Router {
         currElement.setIsChild(true);
         currElement.setHandler(handler);
 
-
-        // when we reach to the last element int the array -> set the handler to the leaf node
+        // when we reach to the last element int the array -> set the handler to the
+        // leaf node
     }
 
     private boolean isWildCard(String name) {
@@ -70,10 +99,11 @@ public class Router {
     public RouteHandler getHandler(String path) {
         String[] elements = path.split("/");
         int index = 0;
-        // iterate the array until we no longer find a child and add the missing elements
-        Router currElement = this;
-        Map<String,String> paramMap = new HashMap<>();
-        while ( index < elements.length) {
+        // iterate the array until we no longer find a child and add the missing
+        // elements
+        RouteTrie currElement = this;
+        Map<String, String> paramMap = new HashMap<>();
+        while (index < elements.length) {
             String element = elements[index];
             if (!currElement.childrens.containsKey(element) && !currElement.childrens.containsKey(":param")) {
                 break;
@@ -88,33 +118,29 @@ public class Router {
             index++;
         }
 
-
         if (index == elements.length && currElement.isChild) {
             // We have found the handler
-            return new RouteHandler( currElement.handler,paramMap);
+            return new RouteHandler(currElement.handler, paramMap);
         } else {
             // TODO should I throw error here?
             return null;
         }
     }
 
-
-
     @Override
     public String toString() {
         return "{" +
-            " childrens='" + getChildrens() + "'" +
-            ", isChild='" + isIsChild() + "'" +
-            ", name='" + getName() + "'" +
-            "}";
+                " childrens='" + getChildrens() + "'" +
+                ", isChild='" + isIsChild() + "'" +
+                ", name='" + getName() + "'" +
+                "}";
     }
 
-
-    public Map<String,Router> getChildrens() {
+    public Map<String, RouteTrie> getChildrens() {
         return this.childrens;
     }
 
-    public void setChildrens(Map<String,Router> childrens) {
+    public void setChildrens(Map<String, RouteTrie> childrens) {
         this.childrens = childrens;
     }
 
@@ -126,7 +152,6 @@ public class Router {
         return this.isChild;
     }
 
-
     public String getName() {
         return this.name;
     }
@@ -135,8 +160,4 @@ public class Router {
         this.name = name;
     }
 
-
 }
-
-
- 
