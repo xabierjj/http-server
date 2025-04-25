@@ -110,7 +110,7 @@ public class Server {
                     RouteHandler requestHandler = this.router.getHandler(httpRequest);
                     HttpResponse httpResponse;
                     if (requestHandler == null) {
-                        httpResponse = new HttpResponse(httpRequest.getProtocol(), HttpStatusCode.NOT_FOUND);
+                        httpResponse = new HttpResponse(httpRequest, HttpStatusCode.NOT_FOUND);
                     } else {
                         Map<String, String> paramMap = requestHandler.params();
                         httpResponse = requestHandler.requestHandler().handle(httpRequest, paramMap);

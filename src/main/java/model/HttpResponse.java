@@ -8,16 +8,18 @@ public class HttpResponse {
   private HttpStatusCode statusCode;
   private byte[] body;
   private HttpHeaders headers = new HttpHeaders();
+  private HttpRequest httpRequest;
 
-  public HttpResponse(String protocol, HttpStatusCode statusCode, String bodyText) {
-    this(protocol, statusCode, bodyText != null ? bodyText.getBytes(StandardCharsets.UTF_8) : null);
+  public HttpResponse(HttpRequest httpRequest, HttpStatusCode statusCode, String bodyText) {
+    this(httpRequest, statusCode, bodyText != null ? bodyText.getBytes(StandardCharsets.UTF_8) : null);
     if (bodyText != null) {
         headers.set("Content-Type", "text/plain");
     }
 }
 
-public HttpResponse(String protocol, HttpStatusCode statusCode, byte[] body) {
-    this.protocol = protocol;
+public HttpResponse(HttpRequest httpRequest, HttpStatusCode statusCode, byte[] body) {
+    this.protocol = httpRequest.getProtocol();
+    this.httpRequest = httpRequest;
     this.statusCode = statusCode;
     this.body = body;
 
@@ -26,8 +28,9 @@ public HttpResponse(String protocol, HttpStatusCode statusCode, byte[] body) {
     }
 }
 
-  public HttpResponse(String protocol, HttpStatusCode statusCode) {
-    this.protocol = protocol;
+  public HttpResponse(HttpRequest httpRequest, HttpStatusCode statusCode) {
+    this.protocol = httpRequest.getProtocol();
+    this.httpRequest = httpRequest;
     this.statusCode = statusCode;
   }
 
@@ -49,6 +52,7 @@ public HttpResponse(String protocol, HttpStatusCode statusCode, byte[] body) {
       sbd.append("\r\n");
 
     }
+
     sbd.append("\r\n");
 
     if (this.body != null) {
@@ -68,6 +72,14 @@ public HttpResponse(String protocol, HttpStatusCode statusCode, byte[] body) {
     for (Map.Entry<String, String> header : this.headers.entries()) {
         sbd.append(header.getKey()).append(": ").append(header.getValue()).append("\r\n");
     }
+
+       // if there is a Connection header in the request we have to return the same header
+      String connection = this.httpRequest.getHeaderValue("Connection");
+      if (connection != null &&  connection.equals("close")) {
+        sbd.append("Connection: ");
+        sbd.append("close");
+        sbd.append("\r\n");
+      }
 
     sbd.append("\r\n");
     byte[] headerBytes = sbd.toString().getBytes(StandardCharsets.UTF_8);

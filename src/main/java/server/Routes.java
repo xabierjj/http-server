@@ -11,31 +11,31 @@ public class Routes {
         FileService fileService = new FileService(fileDirectory);
         Router router = new Router();
 
-        router.get("/", (request, params) -> new HttpResponse(request.getProtocol(), HttpStatusCode.OK));
+        router.get("/", (request, params) -> new HttpResponse(request, HttpStatusCode.OK));
 
         router.get("/user-agent", (request, params) -> {
             String userAgent = request.getHeaderValue("user-agent");
-            return new HttpResponse(request.getProtocol(), HttpStatusCode.OK, userAgent);
+            return new HttpResponse(request, HttpStatusCode.OK, userAgent);
         });
 
         router.get("/echo/{str}", (request, params) -> {
             String str = params.get("str");
-            return new HttpResponse(request.getProtocol(), HttpStatusCode.OK, str);
+            return new HttpResponse(request, HttpStatusCode.OK, str);
         });
 
         router.get("/files/{filename}", (request, params) -> {
             String filename = params.get("filename");
             try {
                 byte[] fileBytes = fileService.readFile(filename);
-                HttpResponse response = new HttpResponse(request.getProtocol(), HttpStatusCode.OK,
+                HttpResponse response = new HttpResponse(request, HttpStatusCode.OK,
                         fileBytes);
                 response.addHeader("Content-Type", "application/octet-stream");
                 return response;
             } catch (NoSuchFileException e) {
-                return new HttpResponse(request.getProtocol(), HttpStatusCode.NOT_FOUND);
+                return new HttpResponse(request, HttpStatusCode.NOT_FOUND);
 
             } catch (IOException e) {
-                return new HttpResponse(request.getProtocol(), HttpStatusCode.INTERNAL_SERVER_ERROR);
+                return new HttpResponse(request, HttpStatusCode.INTERNAL_SERVER_ERROR);
 
             }
         });
@@ -44,9 +44,9 @@ public class Routes {
             String filename = params.get("filename");
             try {
                 fileService.writeFile(filename, request.getBody());
-                return new HttpResponse(request.getProtocol(), HttpStatusCode.CREATED);
+                return new HttpResponse(request, HttpStatusCode.CREATED);
             } catch (IOException e) {
-                return new HttpResponse(request.getProtocol(), HttpStatusCode.INTERNAL_SERVER_ERROR);
+                return new HttpResponse(request, HttpStatusCode.INTERNAL_SERVER_ERROR);
             }
             
        
