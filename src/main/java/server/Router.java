@@ -45,21 +45,13 @@ class RouteTrie {
         this.handler = handler;
     }
 
-    // post => same method as addPath but for POST requests
-    // get => same method as addPath but for GET requests
-
-    // TODO how do we map the handler
     public void addPath(String path, RequestHandler handler) {
-        // split "/"
         String[] elements = path.split("/");
-
-        // "user" "phone"
 
         RouteTrie currElement = this;
 
         int index = 0;
-        // iterate the array until we no longer find a child and add the missing
-        // elements
+        // iterate the array until we no longer find a child and add the missing elements
         while (index < elements.length) {
             String element = elements[index];
             if (this.isWildCard(element)) {
@@ -88,8 +80,6 @@ class RouteTrie {
         currElement.setIsChild(true);
         currElement.setHandler(handler);
 
-        // when we reach to the last element int the array -> set the handler to the
-        // leaf node
     }
 
     private boolean isWildCard(String name) {
