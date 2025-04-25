@@ -42,7 +42,13 @@ public class Routes {
 
         router.post("/files/{filename}", (request, params) -> {
             String filename = params.get("filename");
-            return new HttpResponse(request.getProtocol(), HttpStatusCode.OK);
+            try {
+                fileService.writeFile(filename, request.getBody());
+                return new HttpResponse(request.getProtocol(), HttpStatusCode.CREATED);
+            } catch (IOException e) {
+                return new HttpResponse(request.getProtocol(), HttpStatusCode.INTERNAL_SERVER_ERROR);
+            }
+            
        
         });
 

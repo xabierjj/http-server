@@ -23,4 +23,9 @@ public class FileService {
         }
     }
 
+    public void writeFile(String fileName, String content) throws IOException {
+        Path filePath = Paths.get(this.directory, fileName);
+        Files.write(filePath,content.getBytes());
+    }
+
 }
