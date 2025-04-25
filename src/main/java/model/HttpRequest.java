@@ -12,7 +12,6 @@ public class HttpRequest {
   
     public HttpRequest(List<String> requestData) {
       this.headers = new HttpHeaders();
-      System.out.println(requestData);
       // First line contains requestLine. ex: GET /user-agent HTTP/1.1
       String requestLine = requestData.get(0);
       String[] parts = requestLine.split(" ");
